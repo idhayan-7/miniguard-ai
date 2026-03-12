@@ -416,3 +416,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# MiniGuard AI — project-specific
+backend/MiniGuard.API/appsettings.Development.json
+backend/MiniGuard.API/logs/
+frontend/MiniGuard.Web/node_modules/
+frontend/MiniGuard.Web/dist/
+frontend/MiniGuard.Web/.angular/

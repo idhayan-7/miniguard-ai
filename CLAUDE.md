@@ -178,7 +178,7 @@ git push origin main
 ## Phase Checklist
 
 - [x] SDLC Docs — business understanding, user stories, tasks, test stubs
-- [ ] Phase 1 — Project structure: MiniGuard.API + MiniGuard.API.Tests + MiniGuard.Web + solution file
+- [x] Phase 1 — Project structure: MiniGuard.API + MiniGuard.API.Tests + MiniGuard.Web + solution file
 - [ ] Phase 2 — Log Simulator: ILogSimulator, LogSimulator IHostedService, anomaly burst
 - [ ] Phase 3 — Claude AI Analysis: IAnomalyService, AnomalyService, MonitorHub, endpoints
 - [ ] Phase 4 — Angular Dashboard: all components, dark theme, Material
@@ -190,11 +190,20 @@ git push origin main
 ## Current Status
 
 **Date:** 2026-03-12
-**Branch:** feature/sdlc-docs (merging to main after commit)
-**Completed:** SDLC documentation — all 4 docs created, 3 xUnit test stubs created
-**Next session:** Start Phase 1 — scaffold MiniGuard.API (.NET 8), MiniGuard.API.Tests (xUnit), MiniGuard.Web (Angular 16 standalone), solution file, run-miniguard.bat
+**Branch:** feature/phase-1-project-setup (merging to main)
+**Completed:** Phase 1 — full solution scaffolded and builds clean
+- backend/MiniGuard.sln with MiniGuard.API + MiniGuard.API.Tests
+- SignalR, Moq packages installed
+- Models, interfaces, MonitorHub, HealthController all created
+- Program.cs configured with CORS + SignalR + Swagger
+- appsettings.json with all config values (no hardcoded values)
+- appsettings.Development.json created (gitignored)
+- Angular 16 standalone app scaffolded with Angular Material + @aspnet/signalr
+- environment.ts with apiUrl + hubUrl
+- run-miniguard.bat launcher at root
+**Next session:** Phase 2 — implement ILogSimulator + LogSimulator IHostedService
 **Known issues:** None
-**Blockers:** Claude API key needed before Phase 3 — paste into appsettings.Development.json
+**Blockers:** Claude API key needed before Phase 3 — paste into backend/MiniGuard.API/appsettings.Development.json
 
 ---
 
