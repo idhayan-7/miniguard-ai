@@ -100,7 +100,6 @@ logs/app.log
 D:\miniguard-ai\
 ├── CLAUDE.md                              ← This file
 ├── run-miniguard.bat                      ← One-click launcher
-├── MiniGuard.sln
 ├── docs\
 │   ├── 01-business-understanding.md
 │   ├── 02-user-stories.md
@@ -112,35 +111,38 @@ D:\miniguard-ai\
 │   ├── 08-user-guide.md                   ← Phase 6
 │   ├── 09-ado-work-items.json             ← Phase 6
 │   └── 10-sprint-plan.md                  ← Phase 6
-├── MiniGuard.API\
-│   ├── Controllers\HealthController.cs
-│   ├── Hubs\MonitorHub.cs
-│   ├── Models\HealthReport.cs
-│   ├── Services\
-│   │   ├── ILogSimulator.cs
-│   │   ├── LogSimulator.cs
-│   │   ├── IAnomalyService.cs
-│   │   └── AnomalyService.cs
-│   ├── appsettings.json
-│   └── appsettings.Development.json       ← gitignored, holds ClaudeApiKey
-├── MiniGuard.API.Tests\
-│   ├── LogSimulatorTests.cs
-│   ├── AnomalyServiceTests.cs
-│   └── HealthControllerTests.cs
-└── MiniGuard.Web\
-    └── src\app\
-        ├── components\
-        │   ├── header\
-        │   ├── status-banner\
-        │   ├── stats-row\
-        │   ├── service-health\
-        │   ├── ai-diagnosis\
-        │   └── log-feed\
-        ├── services\
-        │   ├── monitor.service.ts
-        │   └── signalr.service.ts
-        └── environments\
-            └── environment.ts              ← API URLs here
+├── backend\                               ← All .NET code lives here
+│   ├── MiniGuard.sln
+│   ├── MiniGuard.API\
+│   │   ├── Controllers\HealthController.cs
+│   │   ├── Hubs\MonitorHub.cs
+│   │   ├── Models\HealthReport.cs
+│   │   ├── Services\
+│   │   │   ├── ILogSimulator.cs
+│   │   │   ├── LogSimulator.cs
+│   │   │   ├── IAnomalyService.cs
+│   │   │   └── AnomalyService.cs
+│   │   ├── appsettings.json
+│   │   └── appsettings.Development.json   ← gitignored, holds ClaudeApiKey
+│   └── MiniGuard.API.Tests\
+│       ├── LogSimulatorTests.cs
+│       ├── AnomalyServiceTests.cs
+│       └── HealthControllerTests.cs
+└── frontend\                              ← All Angular code lives here
+    └── MiniGuard.Web\
+        └── src\app\
+            ├── components\
+            │   ├── header\
+            │   ├── status-banner\
+            │   ├── stats-row\
+            │   ├── service-health\
+            │   ├── ai-diagnosis\
+            │   └── log-feed\
+            ├── services\
+            │   ├── monitor.service.ts
+            │   └── signalr.service.ts
+            └── environments\
+                └── environment.ts          ← API URLs here
 ```
 
 ---
@@ -200,16 +202,16 @@ git push origin main
 
 ```bash
 # Phase 1+: Build API
-cd MiniGuard.API && dotnet build
+cd backend/MiniGuard.API && dotnet build
 
 # Phase 1+: Run API
-cd MiniGuard.API && dotnet run
+cd backend/MiniGuard.API && dotnet run
 
 # Phase 1+: Run Tests
-cd MiniGuard.API.Tests && dotnet test
+cd backend/MiniGuard.API.Tests && dotnet test
 
 # Phase 1+: Serve Angular
-cd MiniGuard.Web && ng serve
+cd frontend/MiniGuard.Web && ng serve
 
 # Phase 5+: Launch everything
 run-miniguard.bat
