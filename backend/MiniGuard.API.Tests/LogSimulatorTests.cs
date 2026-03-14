@@ -1,80 +1,149 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
+using MiniGuard.API.Services;
 using Xunit;
 
 namespace MiniGuard.API.Tests;
 
-/// <summary>
-/// TDD stubs for LogSimulator.
-/// All tests are written BEFORE implementation — they will fail until Phase 2 is built.
-/// Pattern: Arrange-Act-Assert
-/// </summary>
-public class LogSimulatorTests
+public class LogSimulatorTests : IDisposable
 {
-    [Fact(Skip = "TDD stub — implement LogSimulator in Phase 2")]
-    public void LogEntry_HasCorrectFormat_WhenWritten()
+    private readonly string _tempLog;
+    private readonly LogSimulator _simulator;
+
+    public LogSimulatorTests()
     {
-        // Arrange
-        // var config = BuildTestConfig(logPath: Path.GetTempFileName());
-        // var simulator = new LogSimulator(config, NullLogger<LogSimulator>.Instance);
+        _tempLog = Path.Combine(Path.GetTempPath(), $"miniguard-test-{Guid.NewGuid()}.log");
 
-        // Act
-        // simulator.WriteSingleEntry("INFO", "OrdersAPI", "GET /api/orders - 200 OK - 45ms");
-        // var lines = File.ReadAllLines(config["LogFilePath"]);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["LogFilePath"] = _tempLog,
+                ["LogMaxLines"] = "500"
+            })
+            .Build();
 
-        // Assert
-        // Assert.Single(lines);
-        // Assert.Matches(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[INFO\] OrdersAPI - .+$", lines[0]);
-        Assert.True(false, "Not implemented — Phase 2 required");
+        _simulator = new LogSimulator(config, NullLogger<LogSimulator>.Instance);
     }
 
-    [Fact(Skip = "TDD stub — implement LogSimulator in Phase 2")]
-    public void LogFile_KeepsMax500Lines_AfterExceeding()
+    public void Dispose()
     {
-        // Arrange
-        // var tempPath = Path.GetTempFileName();
-        // var config = BuildTestConfig(logPath: tempPath);
-        // var simulator = new LogSimulator(config, NullLogger<LogSimulator>.Instance);
-        // Write 600 lines manually
-
-        // Act
-        // simulator.ApplyRotation(tempPath, maxLines: 500);
-        // var lineCount = File.ReadAllLines(tempPath).Length;
-
-        // Assert
-        // Assert.Equal(500, lineCount);
-        Assert.True(false, "Not implemented — Phase 2 required");
+        if (File.Exists(_tempLog))
+            File.Delete(_tempLog);
     }
 
-    [Fact(Skip = "TDD stub — implement LogSimulator in Phase 2")]
-    public void InfoEntry_ContainsKnownServiceName()
+    // TC-LOG-01
+    [Fact]
+    public void WriteSingleEntry_HasCorrectFormat()
     {
-        // Arrange
-        // var knownServices = new[] { "OrdersAPI", "PaymentService", "JobWorker", "DBWorker", "AuthService" };
-        // var simulator = new LogSimulator(...);
-
-        // Act
-        // var entry = simulator.GenerateInfoEntry();
-        // var serviceName = ExtractServiceName(entry);
+        // Arrange & Act
+        _simulator.WriteSingleEntry("INFO", "OrdersAPI", "GET /api/orders/123 - 200 OK - 45ms");
 
         // Assert
-        // Assert.Contains(serviceName, knownServices);
-        Assert.True(false, "Not implemented — Phase 2 required");
+        var lines = File.ReadAllLines(_tempLog);
+        Assert.Single(lines);
+        Assert.Matches(
+            @"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[INFO\] OrdersAPI - GET /api/orders/123 - 200 OK - 45ms$",
+            lines[0]);
     }
 
-    [Fact(Skip = "TDD stub — implement LogSimulator in Phase 2")]
-    public void AnomalyBurst_Produces12To15ErrorEntries()
+    // TC-LOG-02
+    [Fact]
+    public void ApplyRotation_KeepsMaxLines_WhenExceeded()
     {
         // Arrange
-        // var tempPath = Path.GetTempFileName();
-        // var simulator = new LogSimulator(...);
+        var lines = Enumerable.Range(1, 600).Select(i => $"line {i}");
+        File.WriteAllLines(_tempLog, lines);
 
         // Act
-        // var entriesBefore = File.ReadAllLines(tempPath).Length;
-        // simulator.InjectAnomalyBurst();
-        // var entriesAfter = File.ReadAllLines(tempPath).Length;
-        // var burstCount = entriesAfter - entriesBefore;
+        _simulator.ApplyRotation(_tempLog, 500);
 
         // Assert
-        // Assert.InRange(burstCount, 12, 15);
-        Assert.True(false, "Not implemented — Phase 2 required");
+        var result = File.ReadAllLines(_tempLog);
+        Assert.Equal(500, result.Length);
+        Assert.Equal("line 101", result[0]);   // first 100 trimmed
+        Assert.Equal("line 600", result[^1]);  // last line preserved
+    }
+
+    // TC-LOG-02 edge
+    [Fact]
+    public void ApplyRotation_DoesNothing_WhenUnderLimit()
+    {
+        // Arrange
+        File.WriteAllLines(_tempLog, ["line 1", "line 2", "line 3"]);
+
+        // Act
+        _simulator.ApplyRotation(_tempLog, 500);
+
+        // Assert
+        Assert.Equal(3, File.ReadAllLines(_tempLog).Length);
+    }
+
+    // TC-LOG-03
+    [Fact]
+    public void GenerateInfoEntry_ContainsKnownServiceName()
+    {
+        // Arrange
+        var knownServices = new[] { "OrdersAPI", "PaymentService", "JobWorker", "DBWorker", "AuthService" };
+
+        // Act — generate 20 entries to cover random selection
+        for (int i = 0; i < 20; i++)
+        {
+            var entry = _simulator.GenerateInfoEntry();
+
+            // Assert format: [date] [INFO] ServiceName - message
+            Assert.Matches(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[INFO\] \w+ - .+$", entry);
+
+            var serviceName = entry.Split("] [INFO] ")[1].Split(" - ")[0];
+            Assert.Contains(serviceName, knownServices);
+        }
+    }
+
+    // TC-LOG-04
+    [Fact]
+    public void InjectAnomalyBurst_Produces12To15ErrorEntries()
+    {
+        // Arrange
+        File.WriteAllText(_tempLog, string.Empty);
+        var linesBefore = File.ReadAllLines(_tempLog).Length;
+
+        // Act
+        _simulator.InjectAnomalyBurst();
+
+        // Assert
+        var linesAfter = File.ReadAllLines(_tempLog).Length;
+        var burstCount = linesAfter - linesBefore;
+        Assert.InRange(burstCount, 12, 15);
+    }
+
+    [Fact]
+    public void InjectAnomalyBurst_OnlyWritesErrorOrCriticalEntries()
+    {
+        // Arrange
+        File.WriteAllText(_tempLog, string.Empty);
+
+        // Act
+        _simulator.InjectAnomalyBurst();
+
+        // Assert
+        var lines = File.ReadAllLines(_tempLog);
+        Assert.All(lines, line =>
+            Assert.True(line.Contains("[ERROR]") || line.Contains("[CRITICAL]"),
+                $"Expected ERROR or CRITICAL but got: {line}"));
+    }
+
+    [Fact]
+    public void InjectAnomalyBurst_OnlyAffectsOrdersApiAndDbWorker()
+    {
+        // Arrange
+        File.WriteAllText(_tempLog, string.Empty);
+
+        // Act
+        _simulator.InjectAnomalyBurst();
+
+        // Assert
+        var lines = File.ReadAllLines(_tempLog);
+        Assert.All(lines, line =>
+            Assert.True(line.Contains("OrdersAPI") || line.Contains("DBWorker"),
+                $"Unexpected service in burst: {line}"));
     }
 }

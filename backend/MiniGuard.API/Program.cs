@@ -23,9 +23,12 @@ builder.Services.AddCors(options =>
 // SignalR
 builder.Services.AddSignalR();
 
-// Application services (implementations added in Phase 2 & 3)
-// builder.Services.AddSingleton<ILogSimulator, LogSimulator>();
-// builder.Services.AddHostedService(sp => (LogSimulator)sp.GetRequiredService<ILogSimulator>());
+// Log Simulator — singleton so it can be injected as ILogSimulator AND run as IHostedService
+builder.Services.AddSingleton<LogSimulator>();
+builder.Services.AddSingleton<ILogSimulator>(sp => sp.GetRequiredService<LogSimulator>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<LogSimulator>());
+
+// AnomalyService — added in Phase 3
 // builder.Services.AddSingleton<IAnomalyService, AnomalyService>();
 
 var app = builder.Build();

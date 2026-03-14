@@ -6,4 +6,5 @@ public interface ILogSimulator
     void ApplyRotation(string logPath, int maxLines);
     void InjectAnomalyBurst();
     string GenerateInfoEntry();
+    string GenerateErrorEntry();
 }
